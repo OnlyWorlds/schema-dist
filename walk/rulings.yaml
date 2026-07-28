@@ -74,6 +74,29 @@ rulings:
       convention change. The authority here is exercised as much in what the
       table refuses as in what it records.
 
+  - id: change-seq-not-unique
+    applies_to: change_seq on any element; the /changes cursor
+    rule: >
+      `change_seq` is NOT unique within a world. A bulk import stamps every
+      element it creates with a single seq (measured: a demo world with all
+      164 elements at `change_seq: 1`). Consumers MUST NOT diff, dedupe, or
+      key on seq alone. Pagination is unaffected — the cursor carries an id
+      tiebreak and is lossless — but any sync or diff logic treating seq as a
+      per-element identity breaks on exactly the worlds a parse pipeline
+      produces.
+      Two companions: the world `head` COUNTS DELETES, so it can exceed the
+      maximum live element seq and MUST NOT be derived from element bodies;
+      and the `/changes` cursor is polymorphic — a `"seq:uuid"` string when
+      changes return, a bare integer when the array is empty.
+    rationale: >
+      Measured by Kael 2026-07-28 across four real worlds (1,710 element
+      bodies) while building the folder writer. The dangerous case is not
+      exotic: bulk-imported and parsed worlds are precisely the ones most
+      likely to be snapshotted per chapter, so a seq-keyed differ fails first
+      on the workload the format exists to serve.
+    since: "2026-07-28"
+    status: ruled — wire-measured, four worlds
+
   - id: unknown-field-types-must-be-surfaced
     applies_to: any consumer walking the schema
     rule: >
