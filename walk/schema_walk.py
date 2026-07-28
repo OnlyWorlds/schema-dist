@@ -79,11 +79,26 @@ def flatten_fields(
     type_slug: str,
     note: Callable[[str], None] = _noop,
     include_required: bool = False,
+    include_desc: bool = False,
+    include_sections: bool = False,
 ) -> list[dict]:
     """Walk the grouped YAML (Constitution/Origins/... → properties → fields) and
     return a flat, ordered list of field specs. Each spec:
         {name, kind, target?}  where kind in
         {scalar_str, scalar_int, single, multi, generic}
+
+    Opt-in extras, all defaulting OFF so existing emitters get byte-identical
+    output (the same shape as include_required):
+      include_desc     — adds `desc` from the YAML's description, when present.
+                         353 of 355 fields carry one; they are the source of the
+                         SDK's JSDoc and of SCHEMA.md, the package's AI-legibility
+                         artifact. Requested by Kael 2026-07-28: without this the
+                         one-decoder rule would have forced him to either delete
+                         ~365 JSDoc lines or run a second parser over the same
+                         YAML, i.e. re-create the copy we just deleted ten of.
+      include_sections — adds `section`, the YAML group a field came from
+                         (Constitution, Origins, ...). Same rationale: the SDK
+                         exports ELEMENT_SECTIONS and gates it with tests.
     """
     fields: list[dict] = []
     props = doc.get("properties", {})
@@ -96,10 +111,12 @@ def flatten_fields(
                 f"{type_slug}: top-level property `{group_name}` outside a group "
                 f"object — parsed directly."
             )
-            _collect_field(group_name, group, type_slug, fields, note)
+            _collect_field(group_name, group, type_slug, fields, note,
+                           include_desc, group_name if include_sections else None)
             continue
         for fname, fspec in group_props.items():
-            _collect_field(fname, fspec, type_slug, fields, note)
+            _collect_field(fname, fspec, type_slug, fields, note,
+                           include_desc, group_name if include_sections else None)
 
     # Dedupe by field name (keep first). relation.yaml declares `events` in BOTH
     # the Nature and Involves groups — a YAML irregularity. A field maps to one
@@ -129,7 +146,21 @@ def _collect_field(
     type_slug: str,
     out: list[dict],
     note: Callable[[str], None] = _noop,
+    include_desc: bool = False,
+    section: str | None = None,
 ) -> None:
+    n = len(out)
+
+    def _decorate() -> None:
+        """Attach the opt-in extras to whatever this call just appended."""
+        for spec in out[n:]:
+            if include_desc:
+                desc = fspec.get("description")
+                if desc is not None:
+                    spec["desc"] = desc
+            if section is not None:
+                spec["section"] = section
+
     ftype = fspec.get("type")
     if ftype == "string":
         out.append({"name": fname, "kind": "scalar_str"})
@@ -154,7 +185,19 @@ def _collect_field(
         # world.yaml only (time_format_*). Not an element type — should never hit.
         note(f"{type_slug}.{fname}: unexpected `array` scalar — skipped.")
     else:
+        # ⚑ THE SILENT-DROP PATH (Kael, 2026-07-28): the default sink is _noop, so
+        # a VENDORED older walk meeting a NEWER schema drops the new field with no
+        # signal at all — the failure that does not fail loudly, which is the shape
+        # of every bug this week. A consumer pinning an old dist and never passing
+        # `note` is exactly the case. The walk cannot decide the policy (an emitter
+        # mid-migration may legitimately want to continue), so it stays a note —
+        # but the README now tells vendors to pass a sink, and rulings.yaml carries
+        # the row. Raising here unilaterally would break emitters on a schema bump,
+        # which trades a silent failure for a hard one at the worst moment.
         note(f"{type_slug}.{fname}: unknown YAML type `{ftype}` — skipped.")
+        return
+
+    _decorate()
 
 
 def _resolve_target(

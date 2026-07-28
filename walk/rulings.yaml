@@ -74,6 +74,27 @@ rulings:
       convention change. The authority here is exercised as much in what the
       table refuses as in what it records.
 
+  - id: unknown-field-types-must-be-surfaced
+    applies_to: any consumer walking the schema
+    rule: >
+      A consumer that meets a field type it does not recognise MUST surface it.
+      `schema_walk.flatten_fields` SKIPS unknown types and reports them through
+      the `note` sink, which defaults to a no-op — so a vendored walk pinned at
+      an older dist, meeting a newer schema, drops the new field in total
+      silence. Vendors MUST pass a real sink (log, warn, or fail; the policy is
+      theirs). Emitting a partial type from a schema you cannot fully read is
+      the failure this row exists to prevent.
+    rationale: >
+      Found by Kael on 2026-07-28 reading the dist as its first consumer, and
+      named by him as the sharpest supply risk in the artifact. The walk itself
+      cannot choose the policy — an emitter mid-migration may legitimately want
+      to continue past an unknown type — so the obligation sits with the
+      consumer and the default stays non-fatal. Raising unilaterally would
+      convert a silent failure into a hard one at a schema bump, which is worse
+      for everyone downstream.
+    since: "2026-07-28"
+    status: ruled — README instructs vendors to pass a sink
+
   - id: collective-equipment-target
     applies_to: collective.equipment
     rule: >

@@ -12,15 +12,25 @@ against generated files.
   (github.com/OnlyWorlds/OnlyWorlds). No presentation keys.
 - `presentation.json` — family + icon **defaults** per type. Defaults, not
   authority: tools are free to override (Atlas remaps wholesale for dark
-  mode). The colour values carry their CVD-validation provenance — they were
-  measured, not tasted; check the provenance before "fixing" one.
+  mode). Families are names (`agents`, `world`, `abstract`, `temporal`), not
+  hexes: the palette lives in each consumer, and `_meta.provenance` records
+  why the four-family split exists so it is not re-litigated by taste.
 - `walk/schema_walk.py` — THE official schema reader. Vendor it or port it,
   but keep its semantics; it is the one decoder of what the YAMLs mean.
+  Requires PyYAML; no other dependency, and nothing from the platform.
+  **Pass a `note` sink** (`flatten_fields(doc, slug, note=print)`): an unknown
+  field type is *skipped*, and with the default no-op sink it is skipped
+  silently, so a pinned older walk meeting a newer schema loses fields with no
+  signal. Opt-in extras, all off by default: `include_required`,
+  `include_desc`, `include_sections`.
 - `walk/rulings.yaml` — semantic rulings the YAML cannot carry (nullability,
   extension passthrough, drift resolutions). Emitters in every language honor
   these rows rather than re-deriving the conventions.
-- `VERSION` — canonical schema version, dist serial, publish date.
-- `MANIFEST.json` — sha256 of every file above.
+- `VERSION` — canonical schema version, dist serial, publish date. Three lines
+  of `key: value`, not a bare version string; parse it, do not `strip()` it.
+- `MANIFEST.json` — sha256 of every file above. It does **not** hash itself,
+  so the tree holds one more file than the manifest has entries. Verify the
+  listed files; do not diff the manifest against a directory listing.
 
 ## How to consume
 
@@ -51,12 +61,19 @@ carries no tags, so this convention starts here rather than inheriting one.
 
 ## Vendoring
 
-Copying these files into your own repo is a supported path, not a workaround —
-it is what makes an offline or air-gapped build possible, and it is why the
-walk is 77 lines with no dependencies. Vendor it, record the hash, and re-run
-the check when you update. What is *not* supported is editing your copy: the
-walk is the one decoder of what the YAMLs mean, and a forked decoder is how a
-standard quietly becomes several standards.
+Copying these files into your own repo is a supported path, not a workaround:
+it is what makes an offline or air-gapped build possible. The walk is one
+module with a single third-party import (PyYAML) and no platform code, so it
+travels. Vendor it, record the hash, and re-run the check when you update.
+
+What is *not* supported is editing your copy. The walk is the one decoder of
+what the YAMLs mean, and a forked decoder is how a standard quietly becomes
+several standards. If your emitter needs something the walk does not return,
+**ask for it upstream** rather than patching locally: that is what the opt-in
+flags are, and they were added exactly this way.
+
+One known edge, stated rather than hidden: `ELEMENT_TYPES` is a literal inside
+the walk. A 23rd element type would require a new dist, not a local edit.
 
 ## What this is not
 
