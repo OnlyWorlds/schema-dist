@@ -201,3 +201,46 @@ rulings:
       portability promise the standard exists to make.
     since: "2026-07-28"
     status: ruled
+
+  - id: maximum-is-advisory-and-zero-means-unbounded
+    applies_to: "`maximum:` on integer fields (41 fields across 17 types)"
+    rule: >
+      `maximum:` is ADVISORY. No emitter may generate range validation from it,
+      and no consumer may treat a value as rejected for exceeding it.
+      Two populations, one key, and they mean different things:
+      `maximum: 100` (15 fields) is a genuine 0-100 attribute scale authored
+      deliberately - the six character attributes, their six mirrors on trait,
+      plus ability.potency, relation.intensity, species.aggression (whose
+      descriptions say "on a relative scale of 0 to 100" in words).
+      `maximum: 0` (26 fields) is a SENTINEL FOR "NO MAXIMUM", never a real
+      constraint - every one of the 26 is an unbounded world-unit quantity
+      (every date field, weight, height, count, elevation, duration, life_span).
+      A collective whose member count may not exceed zero is not a constraint
+      anyone authored.
+      Until canonical drops the sentinel, an emitter honoring `maximum` naively
+      would cap 26 fields at zero across every backend. THE WALK DROPPING
+      `maximum` IS THEREFORE LOAD-BEARING, not a gap: it has been protecting
+      three consumers silently.
+    rationale: >
+      Found by Kael 2026-07-29 while generating FIELD_SCHEMA, chasing a public
+      `integer_max`/`max` type member that zero entries have ever used. He
+      correctly did NOT ask for the walk to carry `maximum` - propagating the
+      broken half into three languages under the authority of the one decoder
+      is the worse outcome. Same shape as `required:` on pin/marker: a key
+      whose meaning depends on its value, ruled the same way (schema intent,
+      not wire enforcement). Canonical fix is to DELETE the key from the 26,
+      not to teach every consumer a sentinel; it rides the motion cohort.
+    since: "2026-07-29"
+    status: ruled - advisory; canonical sentinel removal rides the motion cohort
+    probe: >
+      Two independent checks, source and wire, because either alone is weaker.
+      SOURCE: keel contains ZERO MaxValueValidator - grep across the codebase
+      returns nothing outside .venv - and `codegen/generate_models.py` states
+      the omission deliberately ("Integer fields all nullable; `maximum:`
+      constraints ignored ... range constraints are not expressed at the DB
+      layer"). So the intent is documented, not accidental.
+      WIRE: POST /api/v2/character/ with `charisma: 9999` against a field the
+      schema caps at 100 returned 201 and STORED 9999 verbatim. Probe element
+      deleted (204) and re-fetched (404); no residue. The wire does not
+      enforce, matching the source read - which is what makes the advisory
+      ruling safe rather than merely convenient.
