@@ -222,6 +222,16 @@ rulings:
       `maximum` IS THEREFORE LOAD-BEARING, not a gap: it has been protecting
       three consumers silently.
     rationale: >
+      ⚑ INTENT CONFIRMED BY THE AUTHOR (Captain, 2026-07-29): `maximum: 0`
+      was AUTHORED to mean "no maximum". So this is a deliberate convention,
+      not a placeholder that escaped review - and that makes the case for
+      changing it stronger rather than weaker, because a convention that
+      inverts a standard keyword will keep being read as the keyword by
+      everyone who was not told. The standard already contains its own
+      correct answer: `trait.yaml` declares proper signed ranges on all six
+      of its attributes with no sentinel, and absence already means
+      unbounded. Nothing needs inventing; 26 fields need aligning with the
+      six that got it right.
       THE DANGER IS ASYMMETRIC AND THAT IS THE POINT: the diligent
       implementer is the one who breaks this, because honoring a declared
       constraint is the correct instinct everywhere else in the standard
