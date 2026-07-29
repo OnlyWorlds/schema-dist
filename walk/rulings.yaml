@@ -110,6 +110,13 @@ rulings:
       ruled — reopening requires a keel storage migration on the table, not a
       convention change. The authority here is exercised as much in what the
       table refuses as in what it records.
+    probe: >
+      Checked against keel's STORAGE rather than against the wire or the
+      proposal: the model fields are declared `blank=True, default=""` and
+      are not nullable, so no third state exists to round-trip. This is why
+      Boss's philosophically-correct null rule was REFUSED - writing it would
+      have minted a promise the platform does not keep. Source-read of the
+      generated models; no live write, no residue.
 
   - id: change-seq-not-unique
     applies_to: change_seq on any element; the /changes cursor
@@ -133,7 +140,16 @@ rulings:
       on the workload the format exists to serve.
     since: "2026-07-28"
     status: ruled — wire-measured, four worlds
-
+    probe: >
+      Kael's measurement across FOUR live worlds via the v2 API, not one: a
+      bulk-imported demo world returned all 164 elements at `change_seq: 1`,
+      which is the finding; incrementally-built worlds showed distinct seqs,
+      which is the control proving the collapse is a property of bulk import
+      rather than of the field itself. The head-counts-deletes companion was
+      read from keel's cursor source, not inferred from the wire. Read-only,
+      no residue. Note the shape of the trap: a consumer testing only against
+      an incrementally-built world sees unique seqs forever and concludes the
+      opposite - the failing case is exactly the world a parse pipeline makes.
   - id: unknown-field-types-must-be-surfaced
     applies_to: any consumer walking the schema
     rule: >
@@ -165,6 +181,13 @@ rulings:
       five days, benign only by luck. This table exists because of this row.
     since: "2026-07-23"
     status: ruled
+    probe: >
+      Settled by DUMP DATA rather than by reading either spec: the production
+      database was queried for live collective.equipment values and they
+      resolve to Object, matching the YAML and not v1's Construct. Chosen as
+      the method precisely because both written sources agreed while the
+      implementations disagreed — when specs concur and behaviour differs,
+      only stored data breaks the tie. No residue (read-only query).
 
   - id: extension-passthrough
     applies_to: unmodeled fields (x_* and tool-prefixed)
