@@ -28,8 +28,8 @@
     "schema/trait.yaml": "261df723f603809d71c9ddf5faf27a0f0ba92186f544e56cea95911051d2359d",
     "schema/world.yaml": "4f834ccd145089a7f5452ed53193f13be23c5ddd9b70d126b9030779c4415539",
     "schema/zone.yaml": "20f3d1d68765421450d1fc72d42285a0eef87b6bd05b46ea14a0c5ee83dee946",
-    "VERSION": "ebf9f2142bead51f8d501fcaa9752d81dd41b3ba8192c4cc8f33003b66c33286",
-    "walk/rulings.yaml": "4471cf865e8dbc08453835e484249a71fbfff83d6461ca26268831cc8a6c74d3",
+    "VERSION": "e3b6e2a573dc34c1f7f28c64efd15a85765e3464e64d80af0662d224d2b47a5d",
+    "walk/rulings.yaml": "988441029e21bf3fdf95525ef8cde5397f5ca9bd8ac48c7c0faa9370ee4b7087",
     "walk/schema_walk.py": "736c211f0e55b456d6e8d030cf09c92db6e1386de888772465d385ab55d88d93"
   }
 }

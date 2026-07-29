@@ -222,6 +222,12 @@ rulings:
       `maximum` IS THEREFORE LOAD-BEARING, not a gap: it has been protecting
       three consumers silently.
     rationale: >
+      THE DANGER IS ASYMMETRIC AND THAT IS THE POINT: the diligent
+      implementer is the one who breaks this, because honoring a declared
+      constraint is the correct instinct everywhere else in the standard
+      (Kael's framing, 2026-07-29). A careless emitter that ignores
+      constraints is accidentally safe here; a careful one is not. That
+      inversion is why the rule lives in this table rather than in a comment.
       Found by Kael 2026-07-29 while generating FIELD_SCHEMA, chasing a public
       `integer_max`/`max` type member that zero entries have ever used. He
       correctly did NOT ask for the walk to carry `maximum` - propagating the
@@ -231,7 +237,15 @@ rulings:
       not wire enforcement). Canonical fix is to DELETE the key from the 26,
       not to teach every consumer a sentinel; it rides the motion cohort.
     since: "2026-07-29"
-    status: ruled - advisory; canonical sentinel removal rides the motion cohort
+    status: >
+      ruled - advisory. The MEANING was ruled independently by Captain the
+      same day ("maximum: 0 means no maximum"), converging with the reading
+      the measurement forced; the ENFORCEMENT question is closed by the probe
+      below. Canonical sentinel removal rides the motion cohort. Sequence for
+      any future consumer, and the order matters: canonical drops the key from
+      the 26 -> only then may the walk carry it -> only then may emitters
+      consume it. Reading `maximum:` directly today, outside the walk, would
+      be re-deriving schema semantics outside the one decoder.
     probe: >
       Two independent checks, source and wire, because either alone is weaker.
       SOURCE: keel contains ZERO MaxValueValidator - grep across the codebase
