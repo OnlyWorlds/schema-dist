@@ -67,7 +67,7 @@ Pass a `note` sink. A field type the walk does not know is skipped, and with the
 python walk/lint_folder.py path/to/world-folder
 ```
 
-One line per problem (`elements/creature/x.json: `characters` is not a field of creature`), then the count it checked. Exit 0 when clean, 1 with problems. Server keys and extension prefixes pass; any other undeclared key does not. It decodes the YAML through the walk beside it, so its view of the schema is the walk's; `--schema DIR` points it at another copy.
+One line per problem (`elements/creature/x.json: `characters` is not a field of creature`), then the count it checked. Exit 0 when clean, 1 with problems. Server keys, the folder format's own keys (`local_updated_at`, `server_updated_at`, `image_media_id`) and extension prefixes pass; any other undeclared key does not. A string may be null on disk (read as the unset string). It decodes the YAML through the walk beside it, so its view of the schema is the walk's; `--schema DIR` points it at another copy.
 
 ## Versions
 

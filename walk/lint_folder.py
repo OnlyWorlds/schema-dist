@@ -9,8 +9,10 @@ PROFILE found three hundred of in one world: `creature.characters`,
 `event.location`, `event.actor`), a value of the wrong shape for its kind, and
 a link that does not resolve inside the folder or resolves to the wrong type.
 Server-managed keys (`type`, `created_at`, `updated_at`, `change_seq`,
-`created_by`) and extension prefixes (`x_`, `atlas_`, `shadow_`) pass; nothing
-else undeclared does. The last line is the count it checked, so an empty
+`created_by`), the folder format's own keys (`local_updated_at`,
+`server_updated_at`, `image_media_id`) and extension prefixes (`x_`, `atlas_`,
+`shadow_`) pass; nothing else undeclared does. A string field may be null on
+disk (read as "", the unset string). The last line is the count it checked, so an empty
 report is a result and not a silence. Exit 0 clean, 1 with problems, 2 when
 the folder is not a world folder.
 
@@ -36,6 +38,11 @@ from schema_walk import decode_schema  # noqa: E402
 # slug and the server-managed fields (elements/serialize.py READONLY_FIELDS
 # minus `world`, which bodies never carry). Extension prefixes as served.
 BODY_EXTRA_KEYS = {"type", "created_at", "updated_at", "change_seq", "created_by"}
+# Keys the folder format itself puts in an element file (folder spec section 5,
+# the linked-folder guidance): Atlas's two sync stamps and the media id. A
+# linked folder carries them on every edited element; Kael's first run on the
+# Captain's Atlas folders flagged all 1,669 of one world's elements (2026-10-12).
+FOLDER_KEYS = {"local_updated_at", "server_updated_at", "image_media_id"}
 EXTENSION_PREFIXES = ("x_", "atlas_", "shadow_")
 
 
@@ -119,14 +126,18 @@ def lint_folder(src: Path, decoded: dict) -> Report:
         if body.get("type", slug) != slug:
             report.add(f"{rel}: `type` is {body['type']!r}, folder says {slug!r}")
         for key, value in body.items():
-            if key in BODY_EXTRA_KEYS or key.startswith(EXTENSION_PREFIXES):
+            if key in BODY_EXTRA_KEYS or key in FOLDER_KEYS \
+                    or key.startswith(EXTENSION_PREFIXES):
                 continue
             spec = fields.get(key)
             if spec is None:
                 report.add(f"{rel}: `{key}` is not a field of {slug}")
                 continue
             kind = spec["kind"]
-            if kind == "scalar_str" and not isinstance(value, str):
+            # A string is "" or content (rulings: string-empty-is-unset); on disk
+            # null reads as "" too, since the platform takes null on a write and
+            # serves "" back. Atlas writes null for an empty text field.
+            if kind == "scalar_str" and value is not None and not isinstance(value, str):
                 report.add(f"{rel}: `{key}` should be a string")
             elif kind == "scalar_int" and value is not None and (
                     not isinstance(value, int) or isinstance(value, bool)):
