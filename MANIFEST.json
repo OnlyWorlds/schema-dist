@@ -39,7 +39,7 @@
     "example/hyperion/world.json": "eeaa6f45d6c232e7aae2114a40eb68a7d30fa7eadcb9e51e6a77908db8d738bb",
     "LICENSE": "ab9469f20388ba53771315ed7cb94461d5e3de6e0113bd8f0280f3364434fe18",
     "presentation.json": "776b5e48d9b27c1d99baabfdaffe7d2fe3995580450452c26e5ab7e30176264f",
-    "README.md": "9123ef1aa34c0da03aacec90d6ab005ca029e460f7085c4f139bf70f21ed541f",
+    "README.md": "a018cc0b306b6aecba5eb22b8dc6052e085d551092da6b4c9b1366ef728bc1c0",
     "schema/ability.yaml": "9fb53aa50af02134714e804b7e4c54652b63dd7adc11dd4aef991c64503205fc",
     "schema/base_properties.yaml": "9d1d6b11ebae8405a3d9845fe8b186059c57e8f7474c9a0665d229025396cb2c",
     "schema/character.yaml": "8bf572cb676024e86c4f7502a0b7f5bdfb2531071633f6f184e446f4e39efa3a",
@@ -65,7 +65,8 @@
     "schema/world.yaml": "167091ddf5637abeae9a81a49c82f837cafea2437635ce6610cc4d2ccc3794ed",
     "schema/zone.yaml": "9474902bf71703ac82495b28ad253266edc0ffc69894ac8846e3934b268c81a5",
     "schema.json": "ecaf341bc379a61c50453ee2ee950730a890b11c9a49bb829242de1ca146a112",
-    "VERSION": "6713d4ccc498131e79e81204ec90284b82f28f24add3137597180fef2a4cf760",
+    "VERSION": "e72bdc81e29e996abfc4a2adc322b0dcfd089a1fcfe3d04502290c4341fb8df7",
+    "walk/lint_folder.py": "fe963ee14ac4e4253f1e85e220fbd73b1c44f696de27c6f8604ef5180e77308a",
     "walk/rulings.yaml": "75fff534c7dd47763ba79d489a31c7792b4f0569e5d3cbbf44f46e677e92deef",
     "walk/schema_walk.py": "0ab025b14a05e87890075b6750d1224f8c560b92246b8f35280605a4115e2966"
   }
