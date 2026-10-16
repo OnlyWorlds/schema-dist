@@ -12,16 +12,22 @@ Knowledge Format (OKF) v0.2, as specified at one pinned commit:
 The bundle:
 
     index.md                       root index; frontmatter `okf_version: "0.2"`
-    world.md                       the World as a concept (`type: World`),
-                                   carrying the bundle metadata
+    world.md                       the World as a concept (`type: OnlyWorlds
+                                   World`), carrying the bundle metadata
     <type>/index.md                one per element type present
     <type>/<name-slug>--<id tail>.md   one concept per element
 
 Each element concept:
   - `type` is the OnlyWorlds type, qualified as OKF's own examples qualify
     theirs (`BigQuery Table`): `OnlyWorlds Character`. `title` is the element's
-    name, `description` its description, `generated` names this exporter and
-    the element's `updated_at`. Never `verified`: an export confirms nothing.
+    name, `description` its description. Never `verified`: an export confirms
+    nothing.
+  - `generated.by` is this exporter, a machine actor, and `generated.at` the
+    element's `updated_at`. OKF §7 asks for a `human:` actor on hand-authored
+    content; the words are the world's authors', but the bundle names no
+    author (the folder does not say who wrote what) and these files are
+    generated, so the machine actor is the true one. Consumers therefore read
+    the bundle as unverified (§5.3).
   - scalar fields sit in the frontmatter under their OnlyWorlds names: `id`,
     `supertype`, `subtype`, `image_url` and every integer field. A field
     whose name OKF defines (§4.1, §5, §10: `status` and the like) would be
@@ -30,24 +36,43 @@ Each element concept:
     name, as bundle-absolute paths (`location: /location/barovia--1a2b3c4d.md`,
     a list for a multi link; `element` for a pin's generic link), so the kind
     of each link survives as a key although OKF links are untyped (§6.1).
+    A link to an id the folder does not hold is written `urn:uuid:<id>`.
   - the body holds the type's own text fields under `# <Section>` /
     `## <Field>` headings in schema order, and every link again as a markdown
     link in a bullet (`- **location**: [Barovia](../location/....md)`), so
     viewers that draw the link graph from bodies draw it. Body links are
-    relative: the reference viewer at the pinned commit skips `/` links.
+    relative: the reference viewer at the pinned commit skips `/` links. A
+    text line markdown would read as a heading (`#`, or a `===`/`---`
+    underline) is escaped with a backslash, so text cannot make a section.
   - unset values (the empty string, null, an empty list) are left out.
-    Extension keys (`x_`, `atlas_`, `shadow_`) are carried as they are;
-    server keys other than `updated_at` are not.
+    Extension keys (`x_`, `atlas_`, `shadow_`) are carried as they are; the
+    server and folder keys the folder lint knows are not, except `updated_at`
+    as `generated.at`.
+
+world.md carries the World's schema fields (`time_current` read from
+`time_range_current` when only that spelling is present, folder format §5),
+its extension keys, `owner_character` (as a link), `format_version`,
+`writable` and every `snapshot_*` key. The `api` block is dropped: it is a
+credential and a sync switch, not world content (folder format §4.1, the
+portable copy).
+
+Nothing is dropped in silence. On stderr, one line each: a file skipped (not
+JSON, not an object, no `id`, or dot-prefixed and so tool-private: folder
+format §4.1 says skip it, leave it, log it), a key that is not a field of
+its type, a field kind this exporter does not know, a link left out (not an
+id, a null in a multi link, or an element of the wrong type), and a link to
+an id the folder does not hold.
 
 The schema is decoded through schema_walk.py beside this file, the one
-decoder; this file reads no YAML of its own. Elements are read from
+decoder; this file reads no YAML of its own, and takes the known server and
+folder keys from lint_folder.py. Elements are read from
 `elements/<type>/*.json` and the legacy `spatial/{map,pin,zone,marker}/`;
 one id in both is served from `elements/` (folder format v0.3.8).
 
 The output is deterministic: the same folder and the same dist give a
 byte-identical bundle (UTF-8, LF, no export timestamp). Exit 0 written,
-1 when the folder cannot be read as elements, 2 on bad arguments (a missing
-folder, an existing OUT-DIR).
+1 when world.json cannot be read or one id is in two files of one layout,
+2 on bad arguments (a missing folder, an existing OUT-DIR).
 """
 
 from __future__ import annotations
@@ -63,6 +88,7 @@ from pathlib import Path
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from lint_folder import BODY_EXTRA_KEYS, EXTENSION_PREFIXES, FOLDER_KEYS  # noqa: E402
 from schema_walk import ELEMENT_TYPES, KNOWN_CATEGORIES, decode_schema  # noqa: E402
 
 EXPORTER = "onlyworlds-okf-export/0.1"
@@ -76,25 +102,34 @@ OKF_KEYS = {"type", "title", "description", "resource", "tags", "sources",
             "usage_window", "generated", "verified", "status", "stale_after",
             "runtime", "parameters", "computation", "executor", "attester",
             "okf_version"}
-EXTENSION_PREFIXES = ("x_", "atlas_", "shadow_")
 LEGACY_SPATIAL = ("map", "pin", "zone", "marker")
+# world.json keys the folder format defines beside the schema's (§4.2, §5).
+WORLD_FOLDER_KEYS = ("format_version", "writable")
+WORLD_DROPPED = ("api", "time_range_current")
 # The OKF `type` of each slug (and the World), qualified: `OnlyWorlds Character`.
 TYPE_NAMES = {slug: f"OnlyWorlds {title}" for title, slug in KNOWN_CATEGORIES.items()}
+# Every break str.splitlines() honours: the reference parser splits the
+# frontmatter on these, so a string holding one is written double-quoted.
+LINE_BREAKS = "\n\r\x0b\x0c\x1c\x1d\x1e\x85  "
+
+
+def _noop(msg: str) -> None:
+    return None
 
 
 class FolderError(Exception):
     pass
 
 
-# --- YAML: block style, newline-bearing strings double-quoted on one line, so
-# no frontmatter line can ever read as the closing `---`.
+# --- YAML: block style, line-break-bearing strings double-quoted on one line
+# (the breaks escaped), so no frontmatter line can read as the closing `---`.
 
 class _Dumper(yaml.SafeDumper):
     pass
 
 
 def _str_rep(dumper, value):
-    style = '"' if ("\n" in value or "\r" in value) else None
+    style = '"' if any(c in value for c in LINE_BREAKS) else None
     return dumper.represent_scalar("tag:yaml.org,2002:str", value, style=style)
 
 
@@ -108,37 +143,43 @@ def _frontmatter(data: dict) -> str:
 
 # --- reading the folder
 
-def _read_json(path: Path, rel: str) -> dict:
+def read_folder(src: Path, note) -> tuple[dict, list[tuple[str, dict, str]]]:
+    """world.json and every element as (type slug, body, folder path),
+    elements/ before spatial/. Files that are not elements are noted, skipped."""
     try:
-        body = json.loads(path.read_text(encoding="utf-8"))
+        world = json.loads((src / "world.json").read_text(encoding="utf-8"))
     except (ValueError, UnicodeDecodeError) as e:
-        raise FolderError(f"{rel}: not JSON ({e})")
-    if not isinstance(body, dict):
-        raise FolderError(f"{rel}: not a JSON object")
-    return body
-
-
-def read_folder(src: Path, note) -> tuple[dict, list[tuple[str, dict]]]:
-    """world.json and every element as (type slug, body), elements/ first."""
-    world = _read_json(src / "world.json", "world.json")
+        raise FolderError(f"world.json: not JSON ({e})")
+    if not isinstance(world, dict):
+        raise FolderError("world.json: not a JSON object")
     found: dict[str, tuple[str, dict, str]] = {}
-    layouts = [("elements", ELEMENT_TYPES), ("spatial", LEGACY_SPATIAL)]
-    for layout, slugs in layouts:
+    for layout, slugs in (("elements", ELEMENT_TYPES), ("spatial", LEGACY_SPATIAL)):
         for slug in slugs:
             folder = src / layout / slug
             for path in sorted(folder.glob("*.json")) if folder.is_dir() else []:
                 rel = path.relative_to(src).as_posix()
-                body = _read_json(path, rel)
+                if path.name.startswith("."):
+                    note(f"{rel}: dot-prefixed, tool-private; skipped")
+                    continue
+                try:
+                    body = json.loads(path.read_text(encoding="utf-8"))
+                except (ValueError, UnicodeDecodeError) as e:
+                    note(f"{rel}: not JSON ({e}); skipped")
+                    continue
+                if not isinstance(body, dict):
+                    note(f"{rel}: not a JSON object; skipped")
+                    continue
                 eid = body.get("id")
                 if not isinstance(eid, str) or not eid:
-                    raise FolderError(f"{rel}: no `id`")
+                    note(f"{rel}: no `id`; skipped")
+                    continue
                 if eid in found:
                     if found[eid][2].startswith("elements/") and layout == "spatial":
                         note(f"{rel}: id {eid} also at {found[eid][2]}; served elements/")
                         continue
                     raise FolderError(f"{rel}: duplicate id {eid} (also {found[eid][2]})")
                 found[eid] = (slug, body, rel)
-    return world, [(slug, body) for slug, body, _ in found.values()]
+    return world, list(found.values())
 
 
 # --- names and links
@@ -149,12 +190,13 @@ def slugify(name: str) -> str:
     return text[:60].rstrip("-") or "element"
 
 
-def assign_paths(elements: list[tuple[str, dict]]) -> dict[str, str]:
-    """id -> bundle path (`character/the-consul--8b711e25.md`). Names are the
-    slug plus the id's last 8 hex digits; a name two elements of one type would
-    share falls back to the full id for both, so no order decides it."""
+def assign_paths(elements) -> dict[str, str]:
+    """id -> bundle path (`character/the-consul--8b711e25.md`), from (slug,
+    body, ...) tuples. Names are the slug plus the id's last 8 hex digits; a
+    name two elements of one type would share falls back to the full id for
+    both, so no order decides it."""
     stems: dict[str, tuple[str, str]] = {}
-    for slug, body in elements:
+    for slug, body, *_ in elements:
         hexid = re.sub(r"[^0-9a-f]", "", body["id"].lower()) or "0"
         stems[body["id"]] = (slug, f"{slugify(str(body.get('name') or ''))}--{hexid[-8:]}")
     counts: dict[tuple[str, str], int] = {}
@@ -180,6 +222,22 @@ def _one_line(text: str) -> str:
 def _heading(name: str) -> str:
     words = name.replace("_", " ")
     return words[:1].upper() + words[1:]
+
+
+_FAKE_HEADING = re.compile(r" {0,3}#| {0,3}(=+|-+)[ \t]*$")
+
+
+def escape_text(text: str) -> str:
+    """A text field as body markdown: LF, outer blank lines trimmed, and a
+    backslash before any line markdown would read as a heading (`# x`, or a
+    `===`/`---` line that would underline the line above)."""
+    out = []
+    for line in str(text).replace("\r\n", "\n").replace("\r", "\n").strip("\n").split("\n"):
+        if _FAKE_HEADING.match(line):
+            i = len(line) - len(line.lstrip(" "))
+            line = line[:i] + "\\" + line[i:]
+        out.append(line)
+    return "\n".join(out)
 
 
 def _timestamp(value) -> str | None:
@@ -209,23 +267,50 @@ def _generated(body: dict) -> dict:
     return gen
 
 
+class _Links:
+    """Resolves one file's links: a bundle path and a body link per id, or a
+    note and nothing for an id that cannot be exported."""
+
+    def __init__(self, here: str, paths: dict, names: dict, stats: dict, note):
+        self.here, self.paths, self.names = here, paths, names
+        self.stats, self.note = stats, note
+
+    def one(self, field: str, eid, target: str | None) -> tuple[str, str] | None:
+        if not isinstance(eid, str) or not eid:
+            self.note(f"{self.here}: `{field}` holds {eid!r}, not an id; left out")
+            return None
+        if eid not in self.paths:
+            self.stats["unresolved"].append(f"{self.here}: `{field}` -> {eid}")
+            return f"urn:uuid:{eid}", f"`{eid}` (not in this bundle)"
+        actual = self.paths[eid].split("/", 1)[0]
+        if target and actual != target:
+            self.note(f"{self.here}: `{field}` -> a {actual}, expected {target}; left out")
+            return None
+        self.stats["links"] += 1
+        rel = "../" + self.paths[eid] if "/" in self.here else self.paths[eid]
+        return "/" + self.paths[eid], f"[{_link_text(self.names[eid])}]({rel})"
+
+
 # --- one element
 
 def element_doc(slug: str, body: dict, decoded: dict, paths: dict, names: dict,
-                stats: dict) -> str:
+                stats: dict, note=_noop) -> str:
+    here = paths[body["id"]]
+    links = _Links(here, paths, names, stats, note)
     fm: dict = {"type": TYPE_NAMES[slug]}
     if not _unset(body.get("name")):
         fm["title"] = str(body["name"])
     if not _unset(body.get("description")):
         fm["description"] = str(body["description"])
     fm["generated"] = _generated(body)
+    known = set(BODY_EXTRA_KEYS) | set(FOLDER_KEYS)
     for f in decoded["base"]:
+        known.add(f["name"])
         if f["name"] in ("name", "description", "world"):
             continue
         if not _unset(body.get(f["name"])):
             fm[_fm_key(f["name"])] = body[f["name"]]
 
-    here = paths[body["id"]]
     blocks: list[tuple[str, str]] = []   # (kind, text): kind "text" or "link"
     section = None
 
@@ -235,49 +320,53 @@ def element_doc(slug: str, body: dict, decoded: dict, paths: dict, names: dict,
             section = name
             blocks.append(("text", f"# {name}"))
 
-    def target(eid) -> tuple[str | None, str]:
-        """(bundle-absolute path or None, bullet value) for one linked id."""
-        stats["links"] += 1
-        if isinstance(eid, str) and eid in paths:
-            rel = "../" + paths[eid]
-            return "/" + paths[eid], f"[{_link_text(names[eid])}]({rel})"
-        stats["unresolved"].append(f"{here}: {eid}")
-        return None, f"`{eid}` (not in this bundle)"
+    def add_links(name: str, found: list[tuple[str, str]], many: bool) -> None:
+        if not found:
+            return
+        fm[_fm_key(name)] = [p for p, _ in found] if many else found[0][0]
+        open_section(f["section"])
+        blocks.append(("link", f"- **{name}**: " + ", ".join(s for _, s in found)))
 
     for f in decoded["types"][slug]:
         kind, name = f["kind"], f["name"]
         if kind == "generic":
-            eid = body.get(f["id_key"])
-            if _unset(eid):
+            type_key, id_key = f["type_key"], f["id_key"]
+            known.update((type_key, id_key))
+            eid, target = body.get(id_key), body.get(type_key)
+            if _unset(eid) and _unset(target):
                 continue
-            path, shown = target(eid)
-            fm[_fm_key(name)] = path if path else f"urn:uuid:{eid}"
-            open_section(f["section"])
-            blocks.append(("link", f"- **{name}**: {shown}"))
+            if target not in decoded["types"]:
+                note(f"{here}: `{name}` names type {target!r}, not a type slug; left out")
+                continue
+            hit = links.one(name, eid, target)
+            add_links(name, [hit] if hit else [], many=False)
             continue
+        known.add(name)
         value = body.get(name)
         if _unset(value):
             continue
         if kind == "scalar_str":
             open_section(f["section"])
-            text = str(value).replace("\r\n", "\n").replace("\r", "\n").strip("\n")
-            blocks.append(("text", f"## {_heading(name)}\n\n{text}"))
+            blocks.append(("text", f"## {_heading(name)}\n\n{escape_text(value)}"))
         elif kind == "scalar_int":
             fm[_fm_key(name)] = value
         elif kind == "single":
-            path, shown = target(value)
-            fm[_fm_key(name)] = path if path else f"urn:uuid:{value}"
-            open_section(f["section"])
-            blocks.append(("link", f"- **{name}**: {shown}"))
+            hit = links.one(name, value, f.get("target"))
+            add_links(name, [hit] if hit else [], many=False)
         elif kind == "multi":
-            pairs = [target(v) for v in value]
-            fm[_fm_key(name)] = [p if p else f"urn:uuid:{v}" for (p, _), v in zip(pairs, value)]
-            open_section(f["section"])
-            blocks.append(("link", f"- **{name}**: " + ", ".join(s for _, s in pairs)))
+            if not isinstance(value, list):
+                note(f"{here}: `{name}` is not a list; left out")
+                continue
+            hits = [links.one(name, v, f.get("target")) for v in value]
+            add_links(name, [h for h in hits if h], many=True)
+        else:
+            note(f"{here}: `{name}` has kind `{kind}`, which this exporter does not know; left out")
 
     for key, value in body.items():
         if key.startswith(EXTENSION_PREFIXES):
             fm[key] = value
+        elif key not in known:
+            note(f"{here}: `{key}` is not a field of {slug}; left out")
 
     out: list[str] = []
     for i, (kind, text) in enumerate(blocks):
@@ -301,18 +390,36 @@ def read_version(schema_dir: Path) -> dict:
     return found
 
 
-def world_doc(world: dict, decoded: dict, version: dict, count: int) -> str:
+def world_doc(world: dict, decoded: dict, version: dict, count: int,
+              paths: dict | None = None, names: dict | None = None,
+              stats: dict | None = None, note=_noop) -> str:
+    stats = stats if stats is not None else {"links": 0, "unresolved": []}
+    links = _Links("world.md", paths or {}, names or {}, stats, note)
+    world = dict(world)
+    if world.get("time_current") is None and world.get("time_range_current") is not None:
+        world["time_current"] = world["time_range_current"]
     fm: dict = {"type": TYPE_NAMES["world"]}
     if not _unset(world.get("name")):
         fm["title"] = str(world["name"])
     if not _unset(world.get("description")):
         fm["description"] = str(world["description"])
     fm["generated"] = _generated(world)
+    known = set(WORLD_DROPPED) | {"owner_character"}
     for f in decoded["world"]:
+        known.add(f["name"])
         if f["name"] in ("name", "description"):
             continue
         if not _unset(world.get(f["name"])):
             fm[_fm_key(f["name"])] = world[f["name"]]
+    if not _unset(world.get("owner_character")):
+        hit = links.one("owner_character", world["owner_character"], "character")
+        if hit:
+            fm["owner_character"] = hit[0]
+    for key, value in world.items():
+        if key in WORLD_FOLDER_KEYS or key.startswith(("snapshot_",) + EXTENSION_PREFIXES):
+            fm[_fm_key(key)] = value
+        elif key not in known:
+            note(f"world.json: `{key}` is not a World field; left out")
     serial = version.get("serial", "unknown")
     fm["onlyworlds_export"] = {
         "exporter": EXPORTER,
@@ -330,23 +437,33 @@ def index_entry(title: str, link: str, desc: str) -> str:
     return f"* [{_link_text(title)}]({link}){suffix}"
 
 
-def build_bundle(src: Path, schema_dir: Path, note) -> tuple[dict[str, str], dict]:
+def build_bundle(src: Path, schema_dir: Path, note=_noop) -> tuple[dict[str, str], dict]:
     """Every bundle file as {bundle path: text}, and the export's counts."""
-    decoded = decode_schema(schema_dir, note=note)
+    walk_notes: list[str] = []
+    decoded = decode_schema(schema_dir, note=walk_notes.append)
+    # The walk explains each generic link in a note; this exporter reads both
+    # of its keys, so that note is expected and not repeated. Others pass on.
+    expected = tuple(f"{slug}.{f['name']}: `generic-link`"
+                     for slug, fields in decoded["types"].items()
+                     for f in fields if f["kind"] == "generic")
+    for n in walk_notes:
+        if not n.startswith(expected):
+            note(f"walk: {n}")
     world, elements = read_folder(src, note)
     paths = assign_paths(elements)
-    names = {body["id"]: str(body.get("name") or "") for _, body in elements}
+    names = {body["id"]: str(body.get("name") or "") for _, body, _ in elements}
     stats = {"links": 0, "unresolved": [], "elements": len(elements)}
     files: dict[str, str] = {}
     by_type: dict[str, list[tuple[str, str, str]]] = {}
-    for slug, body in elements:
+    for slug, body, _ in elements:
         path = paths[body["id"]]
-        files[path] = element_doc(slug, body, decoded, paths, names, stats)
+        files[path] = element_doc(slug, body, decoded, paths, names, stats, note)
         by_type.setdefault(slug, []).append(
             (names[body["id"]], path.split("/", 1)[1], str(body.get("description") or "")))
 
     version = read_version(schema_dir)
-    files["world.md"] = world_doc(world, decoded, version, len(elements))
+    files["world.md"] = world_doc(world, decoded, version, len(elements),
+                                  paths, names, stats, note)
     root = [f'---\nokf_version: "{OKF_VERSION}"\n---\n', "# World\n",
             index_entry(str(world.get("name") or "World"), "world.md",
                         f"The world. OnlyWorlds schema {version.get('canonical', 'unknown')}; "
@@ -376,9 +493,9 @@ def write_bundle(files: dict[str, str], out: Path) -> None:
 
 
 def main(argv=None) -> int:
-    if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
-        sys.stderr.reconfigure(encoding="utf-8")
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("folder", type=Path, help="a world folder (holds world.json and elements/)")
     ap.add_argument("out", type=Path, help="the bundle directory to create; must not exist")
