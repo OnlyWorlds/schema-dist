@@ -77,7 +77,7 @@ class HyperionBundle(unittest.TestCase):
         for rel, text in self.concepts().items():
             fm, _ = split(text)
             src = by_id[fm["id"]]
-            self.assertEqual(fm["type"], src["type"].capitalize(), rel)
+            self.assertEqual(fm["type"], "OnlyWorlds " + src["type"].capitalize(), rel)
             self.assertEqual(fm["title"], src["name"], rel)
             self.assertNotIn("verified", fm, rel)
 
@@ -124,6 +124,8 @@ class HyperionBundle(unittest.TestCase):
         for rel, data in self.files.items():
             if rel.endswith("/index.md"):
                 self.assertFalse(data.startswith(b"---"), f"{rel}: frontmatter in an index")
+        self.assertIn("* [OnlyWorlds Character](character/index.md) - 3 elements", root)
+        self.assertTrue(self.files["character/index.md"].startswith(b"# OnlyWorlds Character\n"))
         listed = sum(data.decode("utf-8").count("\n* [")
                      for rel, data in self.files.items() if rel.endswith("/index.md"))
         self.assertEqual(listed, len(self.sources))
@@ -132,7 +134,7 @@ class HyperionBundle(unittest.TestCase):
         fm, _ = split(self.files["world.md"].decode("utf-8"))
         meta = fm["onlyworlds_export"]
         version = okf_export.read_version(SCHEMA)
-        self.assertEqual(fm["type"], "World")
+        self.assertEqual(fm["type"], "OnlyWorlds World")
         self.assertEqual(fm["title"], "Hyperion")
         self.assertEqual(meta["schema"], version["canonical"])
         self.assertIn(okf_export.OKF_COMMIT, meta["okf_spec"])

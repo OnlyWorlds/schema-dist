@@ -18,7 +18,8 @@ The bundle:
     <type>/<name-slug>--<id tail>.md   one concept per element
 
 Each element concept:
-  - `type` is the OnlyWorlds type name (`Character`), `title` the element's
+  - `type` is the OnlyWorlds type, qualified as OKF's own examples qualify
+    theirs (`BigQuery Table`): `OnlyWorlds Character`. `title` is the element's
     name, `description` its description, `generated` names this exporter and
     the element's `updated_at`. Never `verified`: an export confirms nothing.
   - scalar fields sit in the frontmatter under their OnlyWorlds names: `id`,
@@ -77,7 +78,8 @@ OKF_KEYS = {"type", "title", "description", "resource", "tags", "sources",
             "okf_version"}
 EXTENSION_PREFIXES = ("x_", "atlas_", "shadow_")
 LEGACY_SPATIAL = ("map", "pin", "zone", "marker")
-TYPE_NAMES = {slug: title for title, slug in KNOWN_CATEGORIES.items()}
+# The OKF `type` of each slug (and the World), qualified: `OnlyWorlds Character`.
+TYPE_NAMES = {slug: f"OnlyWorlds {title}" for title, slug in KNOWN_CATEGORIES.items()}
 
 
 class FolderError(Exception):
@@ -356,7 +358,7 @@ def build_bundle(src: Path, schema_dir: Path, note) -> tuple[dict[str, str], dic
         entries = sorted(by_type[slug], key=lambda e: (e[0].casefold(), e[1]))
         n = len(entries)
         root.append(index_entry(TYPE_NAMES[slug], f"{slug}/index.md",
-                                f"{n} {TYPE_NAMES[slug]} element{'s' if n != 1 else ''}"))
+                                f"{n} element{'s' if n != 1 else ''}"))
         lines = [f"# {TYPE_NAMES[slug]}", ""]
         lines += [index_entry(t, link, d) for t, link, d in entries]
         files[f"{slug}/index.md"] = "\n".join(lines) + "\n"
