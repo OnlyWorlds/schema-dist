@@ -40,7 +40,7 @@
     "example/world-export.json": "598ccc49ed1858b4b7c91e9635f0c06a5f545267a1c5365dfbaef9e387a4e8b1",
     "LICENSE": "ab9469f20388ba53771315ed7cb94461d5e3de6e0113bd8f0280f3364434fe18",
     "presentation.json": "3c20afa9fee3c191c390452f74f415eb999156bbbf966c56beac283fa0ea91a4",
-    "profiles/calendar.md": "db232df653f533d73cc2d18618ff1528849fec3920d7a43dbc0388410ff96195",
+    "profiles/calendar.md": "e138f4984704df9278ad1d26a715351f36de42d88d2974152e280f6bd1171c1a",
     "profiles/identity.md": "2e7dc31124880a42b8dd16eda0fa159b8b67716e76182e9b04ebf5136c836986",
     "README.md": "f94b2f22e97196f6c0725b5e3443fd207866688d5f988cbabbe9ad389e8a15ce",
     "schema/ability.yaml": "9fb53aa50af02134714e804b7e4c54652b63dd7adc11dd4aef991c64503205fc",
@@ -68,7 +68,7 @@
     "schema/world.yaml": "167091ddf5637abeae9a81a49c82f837cafea2437635ce6610cc4d2ccc3794ed",
     "schema/zone.yaml": "9474902bf71703ac82495b28ad253266edc0ffc69894ac8846e3934b268c81a5",
     "schema.json": "cee2462d581ed79eb45bdaf72203379f1cdd7832a7a24d2b74d1a9c564221076",
-    "VERSION": "27cb78649cc861253b607e23ce9b6aaec4ae76de7413a3ce57cb145399d30f26",
+    "VERSION": "51fe75181447244ea28e0456b7feaa3aeee9c140cfb138fecdcd1d29c8d88bd0",
     "walk/lint_folder.py": "c3c2df9c78ee11bd70157d70908a6b6f94b02e1eed917958771cd1cea602ef18",
     "walk/rulings.yaml": "75fff534c7dd47763ba79d489a31c7792b4f0569e5d3cbbf44f46e677e92deef",
     "walk/schema_walk.py": "0ab025b14a05e87890075b6750d1224f8c560b92246b8f35280605a4115e2966"

@@ -11,7 +11,7 @@
 | Key | Meaning |
 |---|---|
 | `version` | `1`. Any other value: not a calendar. |
-| `grain` | The world's `time_basic_unit` when the calendar was made (`"day"`, `"year"`, ...). One step of the time line. |
+| `grain` | The world's `time_basic_unit` when the calendar was made (`"day"`, `"year"`, ...). One step of the time line. Required: a value without a string `grain` is not a calendar. |
 | `step_name` | The culture's word for one step ("Sol"). Optional; defaults to `grain`. |
 | `bundles.months` | `names` and `lengths` (same length, each length a whole number of steps from 1). |
 | `bundles.year` | `steps`: a year's length, only for a calendar without months. |
@@ -23,13 +23,24 @@
 **How a reader turns a date into words.**
 1. The date is an integer step. Step 0 opens year 0, and that is fixed: a calendar has no epoch offset. A world that wants day 0 elsewhere stores its dates shifted.
 2. Division is Euclidean floor throughout, so negative steps (a backstory) read like positive ones.
-3. A year is the months' lengths plus any leap days its year index earns; year index = how many whole years from step 0.
-4. The era is the one whose range holds the step (the latest start wins an overlap); its year number counts from the year its `start` falls in, from `year_base`.
+3. A year is the months' lengths plus any leap days its year index earns; year index = how many whole years from step 0. The leap rule is a floored modulo, so year 0 is a leap year and negative years follow the same rule.
+4. The era is the one whose range holds the step (the latest start wins an overlap; at equal starts an `up` era wins); its year number counts from the year its `start` falls in, from `year_base`.
 5. Fill the template. A known token with no value (no week, no era) prints empty and its separator closes up; an unknown token prints as written.
 
 The TypeScript SDK holds this whole as `breakdownStep` and `formatStep` (and `parseDate` back); a reader in another language can port those functions, and the SDK's source is the reference.
 
-**What a reader may ignore.** Unknown keys anywhere in the value. `closed` (it only governs date entry). `grain` (a sentinel for the tool that edits the calendar; it does not change the arithmetic). `step_name` and the format templates, if the reader prints its own way. A value that fails the checks above (wrong `version`, months and lengths of different counts, a length below 1) is not a calendar: a reader shows bare numbers, never an error.
+**What a reader may ignore.** Unknown keys anywhere in the value. `closed` (it only governs date entry). `grain` in the arithmetic (it does not change how a step is read, but it must be present). `step_name` and the format templates, if the reader prints its own way.
+
+**Not a calendar.** A reader refuses the value, and shows bare numbers, never an error, when:
+- `version` is not 1;
+- `grain` is not a string;
+- the months' `names` and `lengths` are not lists of the same, non-zero length;
+- a month length, `bundles.year.steps`, `bundles.week.length` or an `every_years` is not a whole number from 1;
+- `bundles.week.names` is not a list;
+- `eras` is not a list, or an era lacks a string `name` or a numeric `start`;
+- `intercalary` is not a list, or an entry lacks a string `name` or a whole `after_month`.
+
+Every reader refuses the same values, or one tool shows a calendar where another shows numbers.
 
 **What a writer must keep.** Everything it did not change, unknown keys included. A re-key never rewrites the value (it holds no element ids).
 
