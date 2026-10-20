@@ -24,10 +24,14 @@
 1. The date is an integer step. Step 0 opens year 0, and that is fixed: a calendar has no epoch offset. A world that wants day 0 elsewhere stores its dates shifted.
 2. Division is Euclidean floor throughout, so negative steps (a backstory) read like positive ones.
 3. A year is the months' lengths plus any leap days its year index earns; year index = how many whole years from step 0. The leap rule is a floored modulo, so year 0 is a leap year and negative years follow the same rule.
-4. The era is the one whose range holds the step (the latest start wins an overlap; at equal starts an `up` era wins); its year number counts from the year its `start` falls in, from `year_base`.
-5. Fill the template. A known token with no value (no week, no era) prints empty and its separator closes up; an unknown token prints as written.
+4. The era is the one whose range holds the step. An era without `end` runs to the next era's start, whatever that era's direction. Where eras overlap, the latest start wins; at equal starts an `up` era wins over a `down` one (a missing or `null` direction is `up`); between two of the same direction, the later in the list wins. An `up` era counts its years from the year its `start` falls in, from `year_base`. A `down` era counts back from the year holding the step just before its pivot, which is `year_base`, so a pivot in the middle of a year leaves no year 0.
+5. Fill the template. A known token with no value (no week, no era) prints empty, and one `,` `;` `·` or space on each side of it closes up; a dash never does. An unknown token prints as written.
 
 The TypeScript SDK holds this whole as `breakdownStep` and `formatStep` (and `parseDate` back); a reader in another language can port those functions, and the SDK's source is the reference.
+
+**`null` is absent.** Anywhere in the value (`eras`, `intercalary`, `bundles.months`, an era's `direction`), `null` reads as if the key were not there, as it does everywhere in the standard.
+
+**Accepted as the SDK reads them.** Fewer weekday names than the week's length (no weekday is printed); months and `bundles.year` together (the months win); an `after_month` past the last month (that day sits in no month); neither months nor a year length (each step is one year).
 
 **What a reader may ignore.** Unknown keys anywhere in the value. `closed` (it only governs date entry). `grain` in the arithmetic (it does not change how a step is read, but it must be present). `step_name` and the format templates, if the reader prints its own way.
 
@@ -44,4 +48,6 @@ Every reader refuses the same values, or one tool shows a calendar where another
 
 **What a writer must keep.** Everything it did not change, unknown keys included. A re-key never rewrites the value (it holds no element ids).
 
-Source: the TypeScript SDK's calendar kernel (`@onlyworlds/sdk` 4.40.0: `readCalendarConfig`, `breakdownStep`, `formatStep`), written from Atlas's calendar, which made the field.
+**Conformance.** `calendar.fixture.json`, beside this page: 52 cases generated from `@onlyworlds/sdk` 4.42.2, 25 calendars with 113 steps and the words and breakdown each one reads as, and 27 values a reader must refuse. A reader conforms when it passes every case.
+
+Source: the TypeScript SDK's calendar kernel (`@onlyworlds/sdk` 4.42.2: `readCalendarConfig`, `breakdownStep`, `formatStep`), written from Atlas's calendar, which made the field.
