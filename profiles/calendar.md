@@ -6,7 +6,7 @@
 
 **On which element.** Any element may carry it; a reader finds calendars by the field being present, never by type or supertype. By convention it sits on a Construct with supertype `calendar`, and that is where Atlas makes one. A world can hold several. Which one a tool speaks is the tool's own choice; Atlas speaks the only one when there is one, and offers a choice when there are more.
 
-**The value.** A JSON object (a reader also accepts the same object as a JSON string; a writer writes the object):
+**The value.** A JSON object (a reader also accepts the same object as a JSON string, strict JSON only; a writer writes the object):
 
 | Key | Meaning |
 |---|---|
@@ -34,11 +34,11 @@ The TypeScript SDK holds this whole as `breakdownStep` and `formatStep` (and `pa
 **Not a calendar.** A reader refuses the value, and shows bare numbers, never an error, when:
 - `version` is not 1;
 - `grain` is not a string;
-- the months' `names` and `lengths` are not lists of the same, non-zero length;
+- the months' `names` and `lengths` are not lists of the same, non-zero length, or a month name is not a string;
 - a month length, `bundles.year.steps`, `bundles.week.length` or an `every_years` is not a whole number from 1;
-- `bundles.week.names` is not a list;
-- `eras` is not a list, or an era lacks a string `name` or a numeric `start`;
-- `intercalary` is not a list, or an entry lacks a string `name` or a whole `after_month`.
+- `bundles.week.names` is not a list of strings;
+- `eras` is present and not a list (`false`, `0` and `""` included), or an era lacks a string `name` or a whole-number `start`, or its `end` or `year_base` is present and not a whole number;
+- `intercalary` is present and not a list (`false`, `0` and `""` included), or an entry lacks a string `name` or a whole `after_month`.
 
 Every reader refuses the same values, or one tool shows a calendar where another shows numbers.
 
