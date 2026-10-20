@@ -1,0 +1,36 @@
+# Extension profile: `atlas_calendar`
+
+**What it is.** A world's own calendar: the names a world gives to its time line (months, weeks, eras, leap days). It changes no date. Every date field in OnlyWorlds stays a plain integer in the world's `time_basic_unit`; the calendar only says how to read that integer aloud.
+
+**Key name.** `atlas_calendar`. It keeps its name from before the profile grammar (`x_<profile>_<field>`), because three readers already use it: Atlas, the TypeScript SDK (`CALENDAR_FIELD`) and the Unity SDK.
+
+**On which element.** Any element may carry it; a reader finds calendars by the field being present, never by type or supertype. By convention it sits on a Construct with supertype `calendar`, and that is where Atlas makes one. A world can hold several. Which one a tool speaks is the tool's own choice; Atlas speaks the only one when there is one, and offers a choice when there are more.
+
+**The value.** A JSON object (a reader also accepts the same object as a JSON string; a writer writes the object):
+
+| Key | Meaning |
+|---|---|
+| `version` | `1`. Any other value: not a calendar. |
+| `grain` | The world's `time_basic_unit` when the calendar was made (`"day"`, `"year"`, ...). One step of the time line. |
+| `step_name` | The culture's word for one step ("Sol"). Optional; defaults to `grain`. |
+| `bundles.months` | `names` and `lengths` (same length, each length a whole number of steps from 1). |
+| `bundles.year` | `steps`: a year's length, only for a calendar without months. |
+| `bundles.week` | `length`, `names`, and `mode`: `free` (default, runs across months, step 0 is `names[0]`) or `nested` (restarts each month). |
+| `intercalary` | Days that belong to no month: `name`, `after_month` (0 = before month 1), `every_years` (a leap rule: present in years where the year index divides by it), `in_week` (default true). |
+| `eras` | `name`, `abbrev`, `start` (a step), `end`, `restart` (default true: years count from the era), `year_base` (0 or 1, default 1), `direction` (`up`, or `down` for a count toward a pivot, like BC), `closed` (shown for old dates, never offered for new ones). |
+| `format`, `format_intercalary` | Templates with `{day} {month} {weekday} {year} {era} {step}` (and `{intercalary}`). Defaults: `{day} {month}, {year} {era}` with months, `{year} {era}` without, `{intercalary}, {year} {era}` for a day outside the months. |
+
+**How a reader turns a date into words.**
+1. The date is an integer step. Step 0 opens year 0, and that is fixed: a calendar has no epoch offset. A world that wants day 0 elsewhere stores its dates shifted.
+2. Division is Euclidean floor throughout, so negative steps (a backstory) read like positive ones.
+3. A year is the months' lengths plus any leap days its year index earns; year index = how many whole years from step 0.
+4. The era is the one whose range holds the step (the latest start wins an overlap); its year number counts from the year its `start` falls in, from `year_base`.
+5. Fill the template. A known token with no value (no week, no era) prints empty and its separator closes up; an unknown token prints as written.
+
+The TypeScript SDK holds this whole as `breakdownStep` and `formatStep` (and `parseDate` back); a reader in another language can port those functions, and the SDK's source is the reference.
+
+**What a reader may ignore.** Unknown keys anywhere in the value. `closed` (it only governs date entry). `grain` (a sentinel for the tool that edits the calendar; it does not change the arithmetic). `step_name` and the format templates, if the reader prints its own way. A value that fails the checks above (wrong `version`, months and lengths of different counts, a length below 1) is not a calendar: a reader shows bare numbers, never an error.
+
+**What a writer must keep.** Everything it did not change, unknown keys included. A re-key never rewrites the value (it holds no element ids).
+
+Source: the TypeScript SDK's calendar kernel (`@onlyworlds/sdk` 4.40.0: `readCalendarConfig`, `breakdownStep`, `formatStep`), written from Atlas's calendar, which made the field.
