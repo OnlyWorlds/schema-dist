@@ -4,7 +4,7 @@
 
 **Key names.** Profile `packet`, three fields: `x_packet_elements`, `x_packet_source`, `x_packet_producer`. The grammar is `x_<profile>_<field>`; the prefix `x_packet_` is reserved.
 
-**On which element.** A Relation with supertype `Work item`. The Relation's own typed link fields (`characters`, `locations`, `laws` and the rest) carry the same elements as real links, so a tool that knows nothing of this profile still follows them; `actor` is whom the work is for; the description is the packet's own summary; the subtype is its state (`open`, `taken`, `done`). Before landing, the same keys sit in a bare JSON object with `type: "relation"`, `supertype: "Work item"`, `name` and `description`, and no `id` (the landing tool mints one).
+**On which element.** A Relation with supertype `Work item`. **Where real links can exist**, the Relation's own typed link fields (`characters`, `locations` and the rest) carry the same elements as real links, so a tool that knows nothing of this profile still follows them: that is when the work item lives in the world its elements live in (a world's own room, a doctor filing into the world it checked). Across worlds (a link to an id the world does not hold is refused by the platform), and for the types a Relation has no link field for (Law, Map, Pin, Marker, Relation), `x_packet_elements` is the only carrier, and **a reader never lands a foreign id as a link**; `actor` is whom the work is for; the description is the packet's own summary; the subtype is its state (`open`, `taken`, `done`). Before landing, the same keys sit in a bare JSON object with `type: "relation"`, `supertype: "Work item"`, `name` and `description`, and no `id` (the landing tool mints one).
 
 **The values.**
 
