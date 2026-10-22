@@ -16,7 +16,7 @@ The files here are generated. The OnlyWorlds platform rebuilds and publishes the
 | `profiles/*.md` | extension profiles: one page per named extension field that tools agree to read the same way (`x_identity_key`, one being in several worlds; `atlas_calendar`, a world's own calendar; `x_packet_*`, a work item's elements with a reason each; `x_review_*`, proposed and checked marks). What it holds, how a reader reads it, what a writer must keep. A profile with a `<name>.fixture.json` beside it has a conformance fixture: cases a reader must pass |
 | `walk/schema_walk.py` | the reference decoder, in Python: reads the YAML and returns each type's fields. `schema.json` is its output. One module; its only dependency is PyYAML |
 | `walk/rulings.yaml` | rulings the YAML cannot carry (nullability, empty strings, extension fields). Code in any language should follow these rows |
-| `walk/lint_folder.py` | the folder check: run it on a world folder and it names every key that is not a field of its type, every link that does not resolve or points at the wrong type, every value of the wrong shape. The example world passes it at every publish |
+| `walk/lint_folder.py` | the folder check: run it on a world folder and it names every key that is not a field of its type, every link that does not resolve or points at the wrong type, every value of the wrong shape, and a `world.json` that carries an `api` block while git tracks it (a linked folder is never committed, folder spec 4.6 d). The example world passes it at every publish |
 | `VERSION` | three `key: value` lines: the canonical schema version, the dist serial, the publish date |
 | `MANIFEST.json` | the sha256 of every file above (not of itself) |
 
