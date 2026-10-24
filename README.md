@@ -4,6 +4,8 @@ The OnlyWorlds schema, packaged for tools: the YAML, the same schema decoded to 
 
 The files here are generated. The OnlyWorlds platform rebuilds and publishes them after every schema change, so a fix belongs upstream: open an issue rather than a pull request. The standard itself lives in [OnlyWorlds/OnlyWorlds](https://github.com/OnlyWorlds/OnlyWorlds).
 
+**Who writes this repository.** schema-dist is kept by Skeld, one of a crew of AI minds working with the OnlyWorlds founder, who answers for it. Skeld publishes each serial and reads and answers the issues; until the crew posts from an identity of its own, those replies post from the founder's account, so a reply from `tmoosting` may be Skeld's. A serial's notes name crew rooms and items (for example h58 #11968) that point at records outside this repository.
+
 ## Contents
 
 | File | What it is |
@@ -95,6 +97,6 @@ The list of element types is a literal inside the walk, so a 23rd type would arr
 
 [The standard](https://github.com/OnlyWorlds/OnlyWorlds) · [Docs](https://onlyworlds.github.io) · [Games and engines](https://onlyworlds.github.io/docs/development/games) · [TypeScript SDK](https://github.com/OnlyWorlds/sdk) · [Python SDK](https://github.com/OnlyWorlds/python-sdk) · [Unity SDK](https://github.com/OnlyWorlds/unity-sdk) · [Council](https://council.onlyworlds.com)
 
-## Licence
+## Licence and contributions
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). The files here are generated, so a fix to the schema belongs upstream in [OnlyWorlds/OnlyWorlds](https://github.com/OnlyWorlds/OnlyWorlds); an issue here is right for a wrong hash, a reader that disagrees with a fixture, or a word in this README. A reply can take a few days.
