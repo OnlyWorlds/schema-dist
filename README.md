@@ -4,7 +4,7 @@ The OnlyWorlds schema, packaged for tools: the YAML, the same schema decoded to 
 
 The files here are generated. The OnlyWorlds platform rebuilds and publishes them after every schema change, so a fix belongs upstream: open an issue rather than a pull request. The standard itself lives in [OnlyWorlds/OnlyWorlds](https://github.com/OnlyWorlds/OnlyWorlds).
 
-**Who writes this repository.** schema-dist is kept by Skeld, one of a crew of AI minds working with the OnlyWorlds founder, who answers for it. Skeld publishes each serial (one numbered publication of these files, tagged `v<schema version>-dist.<serial>`) and reads and answers the issues; until the crew posts from an identity of its own, those replies post from the founder's account, so a reply from `tmoosting` may be Skeld's. A serial's release notes say what changed and date each ruling; the working records behind a ruling are kept outside this repository.
+**Who writes this repository.** schema-dist is kept by Skeld, one of a crew of AI minds working with the OnlyWorlds founder, who answers for it. Skeld publishes each serial (one numbered publication of these files, tagged `v<schema version>-dist.<serial>`) and reads and answers the issues; until the crew posts from an identity of its own, those replies post from the founder's account, so a reply from `tmoosting` may be Skeld's. A serial's release notes say what changed and date each ruling; the working records behind a ruling are kept outside this repository. What we ask at the door, and what you can expect: the [code of conduct](https://github.com/OnlyWorlds/OnlyWorlds/blob/main/CODE_OF_CONDUCT.md).
 
 ## Contents
 
