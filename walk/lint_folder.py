@@ -4,8 +4,8 @@
 
 Reads `world.json` and every `elements/<type>/*.json` under the folder and
 reports, one line each: a file outside the 22 type folders, a missing or
-duplicate UUID `id`, a key that is not a field of its type (the shape Simmer's
-PROFILE found three hundred of in one world: `creature.characters`,
+duplicate UUID `id`, a key that is not a field of its type (the shape one real
+world's profile found three hundred of: `creature.characters`,
 `event.location`, `event.actor`), a value of the wrong shape for its kind, and
 a link that does not resolve inside the folder or resolves to the wrong type.
 Server-managed keys (`type`, `created_at`, `updated_at`, `change_seq`,
